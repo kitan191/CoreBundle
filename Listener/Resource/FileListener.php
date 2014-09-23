@@ -104,10 +104,30 @@ class FileListener implements ContainerAwareInterface
                 $event->setProcess(false);
                 $event->stopPropagation();
             } else {
+                $filesDir = $this->container->getParameter('claroline.param.files_directory');
+                $guid = $this->container->get('claroline.utilities.misc')->generateGuid();
+                $guidFile = $guid . '.' . $extension;
                 $size = filesize($tmpFile);
                 $mimeType = $tmpFile->getClientMimeType();
-                $hashName = $this->container->get('claroline.utilities.misc')->generateGuid() . "." . $extension;
-                $tmpFile->move($this->container->getParameter('claroline.param.files_directory'), $hashName);
+                $date = date('Y-m-d');
+                $dirPath = $this->container->getParameter('claroline.param.files_directory') .
+                    DIRECTORY_SEPARATOR .
+                    $date;
+                $dirExists = file_exists($dirPath) && is_dir($dirPath);
+
+                if (!$dirExists) {
+                    $dirExists = mkdir($dirPath);
+                }
+
+                if ($dirExists) {
+                    $hashName = $date .
+                        DIRECTORY_SEPARATOR .
+                        $guidFile;
+                    $tmpFile->move($filesDir . DIRECTORY_SEPARATOR . $date, $guidFile);
+                } else {
+                    $hashName = $guidFile;
+                    $tmpFile->move($filesDir, $guidFile);
+                }
                 $file->setSize($size);
                 $file->setName($fileName);
                 $file->setHashName($hashName);
@@ -137,12 +157,14 @@ class FileListener implements ContainerAwareInterface
      */
     public function onDelete(DeleteResourceEvent $event)
     {
+        $hashName = $event->getResource()->getHashName();
         $pathName = $this->container->getParameter('claroline.param.files_directory')
             . DIRECTORY_SEPARATOR
-            . $event->getResource()->getHashName();
+            . $hashName;
 
         if (file_exists($pathName)) {
             $event->setFiles(array($pathName));
+            $this->deleteEmptyDirectory($hashName);
         }
 
         $event->stopPropagation();
@@ -430,5 +452,22 @@ class FileListener implements ContainerAwareInterface
             null,
             $perms
         );
+    }
+
+    private function deleteEmptyDirectory($pathName)
+    {
+        $paths = explode(DIRECTORY_SEPARATOR, $pathName);
+
+        if (count($paths) === 2) {
+            $dirPath = $this->container->getParameter('claroline.param.files_directory') .
+                DIRECTORY_SEPARATOR .
+                $paths[0];
+
+            $files = scandir($dirPath);
+
+            if (is_dir($dirPath) && ($files = scandir($dirPath)) && (count($files) <= 2)) {
+                rmdir($dirPath);
+            }
+        }
     }
 }
