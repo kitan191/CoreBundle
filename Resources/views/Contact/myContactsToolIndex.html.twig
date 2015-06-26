@@ -369,6 +369,9 @@
                                                         >
                                                             <i class="fa fa-times-circle"></i>
                                                         </span>
+                                                        {% set menu = knp_menu_get('ClarolineCoreBundle:Builder:contactActionsMenu', [], {'user': contact} ) %}
+                                                        {{ knp_menu_render(menu, {}, 'contact_additional_actions') }}
+{#                                                        {{ knp_menu_render('ClarolineCoreBundle:Builder:contactActionsMenu', {'user': contact}, 'contact_actions') }}#}
                                                     </td>
                                                 </tr>
                                             {% endfor %}

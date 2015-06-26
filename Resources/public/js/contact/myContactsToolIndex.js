@@ -93,7 +93,7 @@
         userPicker.open();
     });
     
-    $('#all-my-contacts-content-body').on('click', 'a', function (event) {
+    $('#all-my-contacts-content-body').on('click', 'a:not(.contact-additional-action)', function (event) {
         event.preventDefault();
         var element = event.currentTarget;
         var route = $(element).attr('href');
